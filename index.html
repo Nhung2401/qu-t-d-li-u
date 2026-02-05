@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>StatMaster OCR - Quét Dữ Liệu Thông Minh</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; padding: 20px; background: #eceff1; color: #37474f; }
+        .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); max-width: 700px; margin: auto; }
+        .upload-section { border: 2px dashed #1a73e8; padding: 20px; text-align: center; border-radius: 10px; margin-bottom: 20px; background: #f8fbff; }
+        #status { font-style: italic; color: #1a73e8; margin: 10px 0; }
+        textarea { width: 100%; height: 60px; margin: 10px 0; padding: 10px; border-radius: 5px; border: 1px solid #cfd8dc; }
+        .result-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 20px; }
+        .stat-item { background: #e3f2fd; padding: 15px; border-radius: 10px; text-align: center; border: 1px solid #bbdefb; }
+        .stat-val { display: block; font-size: 22px; font-weight: bold; color: #0d47a1; }
+        button { background: #1a73e8; color: white; border: none; padding: 15px; width: 100%; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        #preview-img { max-width: 100%; height: auto; border-radius: 5px; margin-top: 10px; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>📸 StatMaster: Quét & Phân Tích</h2>
+    
+    <div class="upload-section">
+        <p>Tải lên ảnh chứa dãy số (Sách GK hoặc đề bài)</p>
+        <input type="file" id="file-input" accept="image/*">
+        <img id="preview-img">
+        <div id="status">Sẵn sàng nhận ảnh...</div>
+    </div>
+
+    <p>Dữ liệu nhận diện được (có thể chỉnh sửa):</p>
+    <textarea id="dataInput" placeholder="Số liệu sẽ xuất hiện ở đây..."></textarea>
+    
+    <button onclick="analyze()">PHÂN TÍCH SỐ LIỆU</button>
+
+    <div class="result-grid" id="results" style="display: none;">
+        <div class="stat-item">Trung bình (x̄) <span class="stat-val" id="mean">-</span></div>
+        <div class="stat-item">Trung vị (Med) <span class="stat-val" id="median">-</span></div>
+        <div class="stat-item">Độ lệch chuẩn (s) <span class="stat-val" id="stdDev">-</span></div>
+        <div class="stat-item">Phương sai (s²) <span class="stat-val" id="variance">-</span></div>
+    </div>
+
+    <canvas id="statChart"></canvas>
+</div>
+
+<script>
+    const fileInput = document.getElementById('file-input');
+    const status = document.getElementById('status');
+    const dataInput = document.getElementById('dataInput');
+    const previewImg = document.getElementById('preview-img');
+
+    // Xử lý khi chọn file
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Hiển thị ảnh xem trước
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            previewImg.src = event.target.result;
+            previewImg.style.display = 'block';
+            recognizeText(event.target.result);
+        };
+        reader.readAsDataURL(file);
+    });
+
+    async function recognizeText(image) {
+        status.innerText = "Đang quét ảnh, vui lòng chờ... (có thể mất vài giây)";
+        try {
+            const result = await Tesseract.recognize(image, 'eng', {
+                logger: m => console.log(m)
+            });
+            
+            // Lọc ra các con số từ văn bản nhận diện được
+            const text = result.data.text;
+            const numbers = text.match(/\d+(\.\d+)?/g); 
+            
+            if (numbers) {
+                dataInput.value = numbers.join(', ');
+                status.innerText = "Quét thành công!";
+            } else {
+                status.innerText = "Không tìm thấy số trong ảnh. Thử lại nhé!";
+            }
+        } catch (error) {
+            status.innerText = "Lỗi xử lý ảnh.";
+            console.error(error);
+        }
+    }
+
+    let myChart;
+    function analyze() {
+        const input = dataInput.value;
+        const nums = input.split(/[, \s]+/).map(n => parseFloat(n.trim())).filter(n => !isNaN(n)).sort((a,b) => a-b);
+        
+        if(nums.length === 0) return alert("Vui lòng nhập hoặc quét số!");
+
+        const mean = nums.reduce((a,b) => a + b) / nums.length;
+        const median = nums.length % 2 === 0 ? (nums[nums.length/2 - 1] + nums[nums.length/2]) / 2 : nums[Math.floor(nums.length/2)];
+        const variance = nums.reduce((a,b) => a + Math.pow(b - mean, 2), 0) / nums.length;
+        const stdDev = Math.sqrt(variance);
+
+        document.getElementById('results').style.display = 'grid';
+        document.getElementById('mean').innerText = mean.toFixed(2);
+        document.getElementById('median').innerText = median;
+        document.getElementById('stdDev').innerText = stdDev.toFixed(2);
+        document.getElementById('variance').innerText = variance.toFixed(2);
+
+        updateChart(nums);
+    }
+
+    function updateChart(data) {
+        const ctx = document.getElementById('statChart').getContext('2d');
+        if(myChart) myChart.destroy();
+        myChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.map((_, i) => i + 1),
+                datasets: [{ label: 'Giá trị', data: data, backgroundColor: '#42a5f5' }]
+            }
+        });
+    }
+</script>
+</body>
+</html>
