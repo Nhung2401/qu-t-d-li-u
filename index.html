@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Luyện tập Nhiệt Hóa Học - Nhung Lê</title>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; max-width: 800px; margin: 20px auto; padding: 20px; background-color: #f4f4f9; }
+        .question-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .btn { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+        .result { font-weight: bold; margin-top: 10px; }
+        .correct { color: green; } .incorrect { color: red; }
+    </style>
+</head>
+<body>
+    <h2>Bài tập Enthalpy - Cô Nhung</h2>
+    <div id="quiz-container"></div>
+
+    <script>
+        const quizData = [
+            {
+                q: "Tính \\(\\Delta_r H^o_{298}\\) của phản ứng: \\(H_2 + Cl_2 \\rightarrow 2HCl\\). Biết \\(E_b(H-H)=436, E_b(Cl-Cl)=243, E_b(H-Cl)=431\\) (kJ/mol).",
+                options: ["-183 kJ", "+183 kJ", "-248 kJ"],
+                correct: 0
+            }
+        ];
+
+        function loadQuiz() {
+            const container = document.getElementById('quiz-container');
+            quizData.forEach((item, index) => {
+                let html = `<div class="question-card">
+                    <p><strong>Câu ${index + 1}:</strong> ${item.q}</p>`;
+                item.options.forEach((opt, i) => {
+                    html += `<input type="radio" name="q${index}" value="${i}"> ${opt}<br>`;
+                });
+                html += `<button class="btn" onclick="checkAnswer(${index})">Nộp bài</button>
+                    <div id="res${index}" class="result"></div>
+                </div>`;
+                container.innerHTML += html;
+            });
+        }
+
+        function checkAnswer(index) {
+            const selected = document.querySelector(`input[name="q${index}"]:checked`);
+            const resDiv = document.getElementById(`res${index}`);
+            if (selected && parseInt(selected.value) === quizData[index].correct) {
+                resDiv.innerHTML = "Chính xác!"; resDiv.className = "result correct";
+            } else {
+                resDiv.innerHTML = "Sai rồi, thử lại nhé!"; resDiv.className = "result incorrect";
+            }
+        }
+        loadQuiz();
+    </script>
+</body>
+</html>
