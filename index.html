@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Khám phá Thể tích Lăng trụ</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --text: #1e293b;
+            --text-light: #64748b;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            background-color: var(--surface);
+            padding: 1rem 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            z-index: 10;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            color: var(--primary);
+        }
+
+        .container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        #canvas-container {
+            flex: 1;
+            position: relative;
+            background-color: #e2e8f0;
+        }
+
+        .controls-panel {
+            width: 350px;
+            background-color: var(--surface);
+            box-shadow: -2px 0 5px rgba(0,0,0,0.05);
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            overflow-y: auto;
+            z-index: 10;
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 0.5rem;
+            background: #f1f5f9;
+            padding: 0.25rem;
+            border-radius: 0.5rem;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 0.5rem;
+            border: none;
+            background: transparent;
+            border-radius: 0.25rem;
+            font-weight: 600;
+            color: var(--text-light);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            background: var(--surface);
+            color: var(--primary);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .control-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        label {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        input[type=range] {
+            width: 100%;
+            cursor: pointer;
+        }
+
+        .select-box {
+            padding: 0.4rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.25rem;
+            font-family: inherit;
+            flex: 1;
+        }
+
+        .action-btn {
+            padding: 0.4rem 0.8rem;
+            background: var(--surface);
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .action-btn:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .info-box {
+            background-color: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            padding: 1rem;
+            border-radius: 0 0.5rem 0.5rem 0;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .math {
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            color: #1d4ed8;
+            display: block;
+            margin-top: 0.5rem;
+        }
+
+        .canvas-instructions {
+            position: absolute;
+            bottom: 1rem;
+            left: 1rem;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            pointer-events: none;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Khám phá Thể tích Lăng trụ</h1>
+    </header>
+
+    <div class="container">
+        <!-- 3D Canvas Area -->
+        <div id="canvas-container">
+            <div class="canvas-instructions">🖱️ Chuột trái để xoay | 🖱️ Chuột phải để di chuyển | 🖱️ Cuộn để thu phóng</div>
+        </div>
+
+        <!-- Bảng điều khiển -->
+        <div class="controls-panel">
+            <div class="tab-buttons">
+                <button class="tab-btn active" data-mode="1">Phần 1: Cắt hộp</button>
+                <button class="tab-btn" data-mode="2">Phần 2: Ghép đa giác</button>
+                <button class="tab-btn" data-mode="3">Phần 3: Xiên</button>
+            </div>
+
+            <!-- Mode 1 Controls -->
+            <div id="mode1-controls" class="control-group">
+                <div class="info-box">
+                    Một khối hộp chữ nhật có thể được cắt đôi theo mặt chéo để tạo thành 2 khối lăng trụ tam giác bằng nhau.
+                </div>
+                <label for="split-slider-1" style="margin-top: 10px;">Tách rời hai nửa:</label>
+                <input type="range" id="split-slider-1" min="0" max="1" step="0.01" value="0">
+            </div>
+
+            <!-- Mode 2 Controls -->
+            <div id="mode2-controls" class="control-group hidden">
+                <div class="info-box">
+                    Lăng trụ đa giác được phân tách thành nhiều lăng trụ tam giác nhỏ có chung chiều cao.
+                </div>
+                
+                <div class="control-row" style="margin-top: 10px;">
+                    <label for="mode2-type">Hình dáng:</label>
+                    <select id="mode2-type" class="select-box">
+                        <option value="regular">Đa giác đều</option>
+                        <option value="irregular">Đa giác không đều</option>
+                    </select>
+                </div>
+                
+                <button id="mode2-random-btn" class="action-btn hidden">🔀 Đổi hình ngẫu nhiên</button>
+
+                <label for="sides-slider" style="margin-top: 5px;">Số khối tam giác (n): <span id="sides-value" style="color: var(--primary);">6</span></label>
+                <input type="range" id="sides-slider" min="3" max="12" step="1" value="6">
+                
+                <label for="split-slider-2" style="margin-top: 10px;">Tách rời các phần:</label>
+                <input type="range" id="split-slider-2" min="0" max="1" step="0.01" value="0">
+            </div>
+
+            <!-- Mode 3 Controls -->
+            <div id="mode3-controls" class="control-group hidden">
+                <div class="control-row" style="margin-top: 10px;">
+                    <label for="mode3-type">Loại đáy:</label>
+                    <select id="mode3-type" class="select-box">
+                        <option value="rect">Hộp chữ nhật</option>
+                        <option value="regular">Đa giác đều</option>
+                        <option value="irregular">Đa giác không đều</option>
+                    </select>
+                </div>
+
+                <div id="mode3-poly-controls" class="control-group hidden" style="background: #f1f5f9; padding: 10px; border-radius: 5px;">
+                    <label for="mode3-sides">Số cạnh đáy (n): <span id="mode3-sides-value">6</span></label>
+                    <input type="range" id="mode3-sides" min="3" max="12" step="1" value="6">
+                    <button id="mode3-random-btn" class="action-btn hidden" style="margin-top: 5px;">🔀 Đổi hình ngẫu nhiên</button>
+                </div>
+                
+                <label for="shear-slider" style="margin-top: 10px;">Độ xiên lăng trụ:</label>
+                <input type="range" id="shear-slider" min="-1.5" max="1.5" step="0.01" value="0.8">
+
+                <label for="plane-slider" style="margin-top: 10px;">Mặt cắt ngang (quét qua hình):</label>
+                <input type="range" id="plane-slider" min="-1.99" max="1.99" step="0.01" value="0">
+            </div>
+        </div>
+    </div>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.150.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.150.0/examples/jsm/"
+        }
+      }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // --- TÌNH TRẠNG & BIẾN TOÀN CỤC ---
+        let currentMode = 1;
+        let scene, camera, renderer, controls;
+        let groupMode1, groupMode2, groupMode3;
+        
+        let meshesMode1 = [];
+        let meshesMode2 = [];
+        let explodeVectorsMode1 = [];
+        let explodeVectorsMode2 = [];
+        
+        let prism1_m3, prism2_m3, cuttingPlane_m3, cross1_m3, cross2_m3, edges2_m3, baseGeo_m3;
+        
+        // Lưu trữ bán kính để giữ hình dạng ổn định khi trượt
+        let mode2Radii = [];
+        let mode3Radii = [];
+
+        // --- DOM Elements ---
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const canvasContainer = document.getElementById('canvas-container');
+        
+        const splitSlider1 = document.getElementById('split-slider-1');
+        
+        const splitSlider2 = document.getElementById('split-slider-2');
+        const sidesSlider = document.getElementById('sides-slider');
+        const sidesValue = document.getElementById('sides-value');
+        const mode2Type = document.getElementById('mode2-type');
+        const mode2RandomBtn = document.getElementById('mode2-random-btn');
+
+        const mode3Type = document.getElementById('mode3-type');
+        const mode3PolyControls = document.getElementById('mode3-poly-controls');
+        const mode3SidesSlider = document.getElementById('mode3-sides');
+        const mode3SidesValue = document.getElementById('mode3-sides-value');
+        const mode3RandomBtn = document.getElementById('mode3-random-btn');
+        const shearSlider = document.getElementById('shear-slider');
+        const planeSlider = document.getElementById('plane-slider');
+
+        // --- INIT ---
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xe2e8f0);
+
+            camera = new THREE.PerspectiveCamera(45, canvasContainer.clientWidth / canvasContainer.clientHeight, 0.1, 100);
+            camera.position.set(6, 5, 8);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            canvasContainer.appendChild(renderer.domElement);
+
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(5, 10, 7);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 1024;
+            dirLight.shadow.mapSize.height = 1024;
+            scene.add(dirLight);
+
+            const gridHelper = new THREE.GridHelper(10, 10, 0x000000, 0x000000);
+            gridHelper.material.opacity = 0.1;
+            gridHelper.material.transparent = true;
+            scene.add(gridHelper);
+
+            groupMode1 = new THREE.Group();
+            groupMode2 = new THREE.Group();
+            groupMode3 = new THREE.Group();
+            scene.add(groupMode1);
+            scene.add(groupMode2);
+            scene.add(groupMode3);
+
+            buildMode1();
+            buildMode2();
+            buildMode3();
+            
+            groupMode2.visible = false;
+            groupMode3.visible = false;
+
+            setupEventListeners();
+            animate();
+        }
+
+        // --- HÀM TẠO SỐ LIỆU ĐA GIÁC ---
+        function generateRadii(n, type) {
+            const arr = [];
+            const baseRadius = 2.5;
+            for (let i = 0; i < n; i++) {
+                if (type === 'regular') {
+                    arr.push(baseRadius);
+                } else {
+                    // Tạo bán kính lồi lõm ngẫu nhiên từ 1.0 đến 3.0
+                    arr.push(1.0 + Math.random() * 2.0);
+                }
+            }
+            return arr;
+        }
+
+        // --- EXTRUSION HELPER (Dùng cho P1 & P2 có viền đẹp) ---
+        function createPrism(shape, color, opacity = 1.0) {
+            const geometry = new THREE.ExtrudeGeometry(shape, {
+                depth: 4, bevelEnabled: true, bevelSegments: 2, bevelSteps: 2, bevelThickness: 0.02, bevelSize: 0.02
+            });
+            const material = new THREE.MeshPhysicalMaterial({ 
+                color: color, metalness: 0.1, roughness: 0.4, transparent: true, opacity: opacity, side: THREE.DoubleSide
+            });
+            const mesh = new THREE.Mesh(geometry, material);
+            const edges = new THREE.EdgesGeometry(geometry);
+            const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x000000, opacity: 0.3, transparent: true }));
+            mesh.add(line);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            mesh.rotation.x = -Math.PI / 2;
+            return mesh;
+        }
+
+        // --- BUILD MODE 1: Cắt hộp chữ nhật ---
+        function buildMode1() {
+            while(groupMode1.children.length > 0) groupMode1.remove(groupMode1.children[0]); 
+            meshesMode1 = [];
+            explodeVectorsMode1 = [];
+
+            const width = 3, depth = 2;
+
+            const shape1 = new THREE.Shape();
+            shape1.moveTo(-width/2, -depth/2); shape1.lineTo(width/2, -depth/2); shape1.lineTo(width/2, depth/2); shape1.lineTo(-width/2, -depth/2);
+
+            const shape2 = new THREE.Shape();
+            shape2.moveTo(-width/2, -depth/2); shape2.lineTo(width/2, depth/2); shape2.lineTo(-width/2, depth/2); shape2.lineTo(-width/2, -depth/2);
+
+            const prism1 = createPrism(shape1, 0x3b82f6, 0.9);
+            const prism2 = createPrism(shape2, 0xf59e0b, 0.9);
+
+            groupMode1.add(prism1, prism2);
+            meshesMode1.push(prism1, prism2);
+
+            explodeVectorsMode1.push(new THREE.Vector3(1, 0, -1).normalize());
+            explodeVectorsMode1.push(new THREE.Vector3(-1, 0, 1).normalize());
+        }
+
+        // --- BUILD MODE 2: Ghép đa giác ---
+        function buildMode2() {
+            while(groupMode2.children.length > 0) groupMode2.remove(groupMode2.children[0]); 
+            meshesMode2 = [];
+            explodeVectorsMode2 = [];
+
+            const nSides = parseInt(sidesSlider.value);
+            const type = mode2Type.value;
+            
+            // Cập nhật lại mảng bán kính nếu cần
+            if (mode2Radii.length !== nSides) {
+                mode2Radii = generateRadii(nSides, type);
+            }
+
+            const angleStep = (Math.PI * 2) / nSides;
+
+            for (let i = 0; i < nSides; i++) {
+                const angle1 = i * angleStep;
+                const angle2 = (i + 1) * angleStep;
+                const r1 = mode2Radii[i];
+                const r2 = mode2Radii[(i + 1) % nSides]; // Nối về đỉnh đầu
+
+                const shape = new THREE.Shape();
+                shape.moveTo(0, 0); // Tâm đa giác
+                shape.lineTo(Math.cos(angle1) * r1, Math.sin(angle1) * r1);
+                shape.lineTo(Math.cos(angle2) * r2, Math.sin(angle2) * r2);
+                shape.lineTo(0, 0);
+
+                const hue = (i / nSides) * 360;
+                const prism = createPrism(shape, new THREE.Color(`hsl(${hue}, 75%, 60%)`), 0.9);
+                groupMode2.add(prism);
+                meshesMode2.push(prism);
+
+                const midAngle = angle1 + (angleStep / 2);
+                explodeVectorsMode2.push(new THREE.Vector3(Math.cos(midAngle), 0, -Math.sin(midAngle)).normalize());
+            }
+            updateMode2(); // Cập nhật lại khoảng cách chẻ ra ngay lập tức
+        }
+
+        // --- BUILD MODE 3: Nguyên lý Cavalieri ---
+        function buildMode3() {
+            while(groupMode3.children.length > 0) groupMode3.remove(groupMode3.children[0]); 
+
+            const type = mode3Type.value;
+            const nSides = parseInt(mode3SidesSlider.value);
+
+            // 1. Tạo Shape gốc
+            let shape = new THREE.Shape();
+            if (type === 'rect') {
+                shape.moveTo(-1.25, -1.25); shape.lineTo(1.25, -1.25); shape.lineTo(1.25, 1.25); shape.lineTo(-1.25, 1.25); shape.lineTo(-1.25, -1.25);
+            } else {
+                if (mode3Radii.length !== nSides) mode3Radii = generateRadii(nSides, type);
+                for (let i = 0; i < nSides; i++) {
+                    const a = i * (Math.PI * 2) / nSides;
+                    const r = mode3Radii[i];
+                    if (i === 0) shape.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+                    else shape.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+                }
+                shape.closePath();
+            }
+
+            // Dùng Extrude không có viền (bevel) để trượt xiên chuẩn toán học
+            const geo1 = new THREE.ExtrudeGeometry(shape, { depth: 4, bevelEnabled: false });
+            geo1.translate(0, 0, -2); // Cân bằng tâm theo trục Z (chiều cao)
+            baseGeo_m3 = geo1.clone(); // Lưu lại geo nguyên gốc để tính độ xiên
+
+            // Khối 1: Đứng
+            const mat1 = new THREE.MeshPhysicalMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.3, side: THREE.DoubleSide, depthWrite: false });
+            prism1_m3 = new THREE.Mesh(geo1, mat1);
+            prism1_m3.rotation.x = -Math.PI / 2;
+            prism1_m3.position.set(-2, 0, 0);
+            prism1_m3.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo1), new THREE.LineBasicMaterial({color: 0x0284c7})));
+            groupMode3.add(prism1_m3);
+
+            // Khối 2: Xiên
+            const mat2 = new THREE.MeshPhysicalMaterial({ color: 0x4ade80, transparent: true, opacity: 0.3, side: THREE.DoubleSide, depthWrite: false });
+            prism2_m3 = new THREE.Mesh(baseGeo_m3.clone(), mat2);
+            prism2_m3.rotation.x = -Math.PI / 2;
+            prism2_m3.position.set(2, 0, 0);
+            edges2_m3 = new THREE.LineSegments(new THREE.EdgesGeometry(prism2_m3.geometry), new THREE.LineBasicMaterial({color: 0x16a34a}));
+            prism2_m3.add(edges2_m3);
+            groupMode3.add(prism2_m3);
+
+            // Mặt phẳng cắt ngang
+            cuttingPlane_m3 = new THREE.Mesh(
+                new THREE.PlaneGeometry(12, 8), 
+                new THREE.MeshBasicMaterial({ color: 0xfef08a, transparent: true, opacity: 0.25, side: THREE.DoubleSide, depthWrite: false })
+            );
+            cuttingPlane_m3.rotation.x = -Math.PI / 2;
+            groupMode3.add(cuttingPlane_m3);
+
+            // Các thiết diện được rút ra (màu cam)
+            const crossShapeGeo = new THREE.ShapeGeometry(shape);
+            const crossEdges = new THREE.EdgesGeometry(crossShapeGeo);
+            
+            cross1_m3 = new THREE.Group();
+            cross1_m3.add(new THREE.LineSegments(crossEdges, new THREE.LineBasicMaterial({ color: 0xea580c })));
+            cross1_m3.add(new THREE.Mesh(crossShapeGeo, new THREE.MeshBasicMaterial({ color: 0xf97316, transparent: true, opacity: 0.3, side: THREE.DoubleSide, depthWrite: false })));
+            cross1_m3.rotation.x = -Math.PI / 2;
+            groupMode3.add(cross1_m3);
+
+            cross2_m3 = cross1_m3.clone();
+            groupMode3.add(cross2_m3);
+
+            updateMode3(); 
+        }
+
+        // --- UPDATE LOGIC (Chuyển động) ---
+        function updateMode1() {
+            const val = parseFloat(splitSlider1.value);
+            for (let i = 0; i < meshesMode1.length; i++) {
+                meshesMode1[i].position.x = explodeVectorsMode1[i].x * (val * 2.0);
+                meshesMode1[i].position.z = explodeVectorsMode1[i].z * (val * 2.0);
+            }
+        }
+
+        function updateMode2() {
+            const val = parseFloat(splitSlider2.value);
+            for (let i = 0; i < meshesMode2.length; i++) {
+                meshesMode2[i].position.x = explodeVectorsMode2[i].x * (val * 2.5);
+                meshesMode2[i].position.z = explodeVectorsMode2[i].z * (val * 2.5);
+            }
+        }
+
+        function updateMode3() {
+            if (!prism2_m3) return;
+            const shear = parseFloat(shearSlider.value);
+            const planeY = parseFloat(planeSlider.value);
+            
+            // Xô lệch khối 2
+            const positions = prism2_m3.geometry.attributes.position;
+            const basePositions = baseGeo_m3.attributes.position;
+            for (let i = 0; i < positions.count; i++) {
+                const x = basePositions.getX(i);
+                const z = basePositions.getZ(i); // Trong hệ toạ độ chưa xoay, Z là chiều cao (từ -2 đến 2)
+                positions.setX(i, x + shear * (z + 2)); 
+            }
+            prism2_m3.geometry.computeVertexNormals();
+            prism2_m3.geometry.attributes.position.needsUpdate = true;
+
+            // Render lại viền
+            prism2_m3.remove(edges2_m3);
+            edges2_m3.geometry.dispose();
+            edges2_m3.geometry = new THREE.EdgesGeometry(prism2_m3.geometry);
+            prism2_m3.add(edges2_m3);
+
+            // Cập nhật mặt phẳng cắt và các thiết diện
+            cuttingPlane_m3.position.y = planeY;
+            cross1_m3.position.set(prism1_m3.position.x, planeY, prism1_m3.position.z);
+            
+            // Mặt thiết diện 2 bị xô lệch trên trục X đúng bằng độ lệch tại chiều cao Y tương ứng
+            const skewedX = prism2_m3.position.x + shear * (planeY + 2);
+            cross2_m3.position.set(skewedX, planeY, prism2_m3.position.z);
+        }
+
+        function switchMode(mode) {
+            currentMode = mode;
+            groupMode1.visible = (mode === 1); groupMode2.visible = (mode === 2); groupMode3.visible = (mode === 3);
+            
+            document.getElementById('mode1-controls').classList.toggle('hidden', mode !== 1);
+            document.getElementById('mode2-controls').classList.toggle('hidden', mode !== 2);
+            document.getElementById('mode3-controls').classList.toggle('hidden', mode !== 3);
+
+            if (mode === 1) updateMode1();
+            if (mode === 2) updateMode2();
+            if (mode === 3) updateMode3();
+            
+            camera.position.set(6, 5, 8);
+            controls.target.set(0, 2, 0);
+        }
+
+        // --- CÁC SỰ KIỆN GIAO DIỆN ---
+        function setupEventListeners() {
+            window.addEventListener('resize', () => {
+                camera.aspect = canvasContainer.clientWidth / canvasContainer.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
+            });
+
+            // Tabs
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    tabBtns.forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    switchMode(parseInt(e.target.dataset.mode));
+                });
+            });
+
+            // Mode 1 & 2 Sliders
+            splitSlider1.addEventListener('input', updateMode1);
+            splitSlider2.addEventListener('input', updateMode2);
+            
+            sidesSlider.addEventListener('input', (e) => {
+                sidesValue.textContent = e.target.value;
+                mode2Radii = generateRadii(parseInt(e.target.value), mode2Type.value); // Buộc tạo lại khi trượt
+                buildMode2();
+            });
+
+            // Mode 2 Type Change
+            mode2Type.addEventListener('change', (e) => {
+                if(e.target.value === 'irregular') mode2RandomBtn.classList.remove('hidden');
+                else mode2RandomBtn.classList.add('hidden');
+                mode2Radii = generateRadii(parseInt(sidesSlider.value), e.target.value);
+                buildMode2();
+            });
+            mode2RandomBtn.addEventListener('click', () => {
+                mode2Radii = generateRadii(parseInt(sidesSlider.value), 'irregular');
+                buildMode2();
+            });
+
+            // Mode 3 UI
+            mode3Type.addEventListener('change', (e) => {
+                if (e.target.value === 'rect') {
+                    mode3PolyControls.classList.add('hidden');
+                } else {
+                    mode3PolyControls.classList.remove('hidden');
+                    if (e.target.value === 'irregular') mode3RandomBtn.classList.remove('hidden');
+                    else mode3RandomBtn.classList.add('hidden');
+                }
+                mode3Radii = generateRadii(parseInt(mode3SidesSlider.value), e.target.value);
+                buildMode3();
+            });
+            mode3SidesSlider.addEventListener('input', (e) => {
+                mode3SidesValue.textContent = e.target.value;
+                mode3Radii = generateRadii(parseInt(e.target.value), mode3Type.value);
+                buildMode3();
+            });
+            mode3RandomBtn.addEventListener('click', () => {
+                mode3Radii = generateRadii(parseInt(mode3SidesSlider.value), 'irregular');
+                buildMode3();
+            });
+
+            shearSlider.addEventListener('input', updateMode3);
+            planeSlider.addEventListener('input', updateMode3);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        init();
+    </script>
+</body>
+</html>
